@@ -1,0 +1,54 @@
+{
+    "name": "eolabs-io/amazon-mws-throttling-middleware",
+    "description": "A Laravel Middleware for throttling Amazon MWS endpoint calls",
+    "keywords": [
+        "eolabs-io",
+        "amazon-mws-throttling-middleware"
+    ],
+    "homepage": "https://github.com/eolabs-io/amazon-mws-throttling-middleware",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Tim Hall",
+            "email": "thall@eolabs.io",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.1",
+        "illuminate/support": "^6.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^4.0",
+        "phpunit/phpunit": "^8.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "EolabsIo\\AmazonMwsThrottlingMiddleware\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "EolabsIo\\AmazonMwsThrottlingMiddleware\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "EolabsIo\\AmazonMwsThrottlingMiddleware\\AmazonMwsThrottlingMiddlewareServiceProvider"
+            ],
+            "aliases": {
+                "AmazonMwsThrottlingMiddleware": "EolabsIo\\AmazonMwsThrottlingMiddleware\\AmazonMwsThrottlingMiddlewareFacade"
+            }
+        }
+    }
+}
