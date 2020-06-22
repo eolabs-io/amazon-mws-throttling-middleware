@@ -46,7 +46,7 @@ trait HasThrottlingParameters
         return $this->restoreRate($restoreRatePerMin / 60);
     }
 
-    public function hourlyRequestQuota(int $hourlyRequestQuota)
+    public function hourlyRequestQuota($hourlyRequestQuota)
     {
         $this->hourlyRequestQuota = $hourlyRequestQuota;
 

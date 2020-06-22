@@ -145,6 +145,56 @@ class ThrottleTest extends TestCase
         $this->assertNumberOfRequests(4);
     }
 
+        /** @test */
+    public function it_throttles_restore_rates_less_than_a_second()
+    {
+        //  maximum request quota of 30 and a restore rate of one request every two seconds
+        $requestQuota = 30;
+        $restoreRate = (1/2);
+
+        $this->throttle->maximumQuota($requestQuota)->restoreRate($restoreRate);
+
+        $this->times($requestQuota, function($i) use ($requestQuota) {
+           $this->callThrottle(); 
+           $this->assertNumberOfRequests($requestQuota-($i+1));
+           $this->assertWasExecuted();
+        });
+
+        $this->callThrottle();
+        $this->assertWasThrottled();
+        $this->assertThrottleDurationEquals(2);
+        
+        //wait for restore
+        $this->knownDate->addMilliseconds(200);
+
+        $this->callThrottle();
+        $this->assertWasThrottled();
+        $this->assertThrottleDurationEquals(1.8);
+        
+        //wait for restore
+        $this->knownDate->addMilliseconds(4000);
+
+        $this->callThrottle();
+        $this->assertWasExecuted();
+        $this->assertThrottleDurationEquals(null);
+        $this->assertNumberOfRequests(1);
+
+        //wait for restore
+        // 0.5 request/sec with max of 30 = 60 secs to restore
+        // 60seconds * 1000(ms/sec) = 60000 sec
+        $this->knownDate->addMilliseconds(60000);
+
+        $this->callThrottle();
+        $this->assertWasExecuted();
+        $this->assertThrottleDurationEquals(null);
+        $this->assertNumberOfRequests($requestQuota-1);
+    }
+
+
+    //====================================
+    //  Helpers
+    //====================================
+
     public function assertWasExecuted()
     {
         $this->assertTrue($this->executedJob === true);

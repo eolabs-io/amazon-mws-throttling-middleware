@@ -64,13 +64,14 @@ class Throttle
         return $this;
     }
 
-    public function getLastRequestDuration(): int
+    public function getLastRequestDuration(): float
     {
         $lastRequest = $this->getLastRequest();
-        return Carbon::now()->diffInSeconds($lastRequest);
+        return (Carbon::now()->diffInMilliseconds($lastRequest) / 1000);
+        // return Carbon::now()->diffInSeconds($lastRequest);
     }
 
-    public function getThrottleDuration(): int
+    public function getThrottleDuration(): float
     {
         $secondsSinceLastRequest = $this->getLastRequestDuration();
         $secondsPerRestoreRate = (1/$this->restoreRatePerSecond);
