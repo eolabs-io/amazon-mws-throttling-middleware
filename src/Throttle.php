@@ -3,6 +3,7 @@
 namespace EolabsIo\AmazonMwsThrottlingMiddleware;
 
 use EolabsIo\AmazonMwsThrottlingMiddleware\Concerns\HasThrottlingParameters;
+use EolabsIo\AmazonMwsThrottlingMiddleware\Contracts\Deferrer;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 
@@ -14,27 +15,32 @@ class Throttle
     /** @var bool */
 	private $throttled = false;
 
+    /** @var EolabsIo\AmazonMwsThrottlingMiddleware\Contracts\Deferrer */
+    protected $deferrer;
 
-    public function __construct()
+
+    public function __construct(Deferrer $deferrer)
     {
-
+        $this->deferrer = $deferrer;
     }
 
     public function then(callable $callback, callable $failure = null)
     {
         $this->evaluateThrottle();
 
-    	if( ! $this->isThrottled()) {
-
-            $this->decreaseRequestQuota();
-    		
-            return $callback();
-    	}
-
-        if ($failure) {
-            $throttleDuration = $this->getThrottleDuration();
-            return $failure($throttleDuration); 
+        if( $this->isThrottled() ) {
+            $this->blockUntilAvailable();
         }
+
+        $this->decreaseRequestQuota();
+            
+        return $callback();
+    }
+
+    public function blockUntilAvailable(): void
+    {
+        $delayUntilNextRequest = ($this->getThrottleDuration() * 1000);
+        $this->deferrer->sleep($delayUntilNextRequest);
     }
 
     public function isThrottled(): bool
@@ -68,7 +74,6 @@ class Throttle
     {
         $lastRequest = $this->getLastRequest();
         return (Carbon::now()->diffInMilliseconds($lastRequest) / 1000);
-        // return Carbon::now()->diffInSeconds($lastRequest);
     }
 
     public function getThrottleDuration(): float

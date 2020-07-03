@@ -2,6 +2,8 @@
 
 namespace EolabsIo\AmazonMwsThrottlingMiddleware;
 
+use EolabsIo\AmazonMwsThrottlingMiddleware\Contracts\Deferrer;
+use EolabsIo\AmazonMwsThrottlingMiddleware\SleepDeferrer;
 use EolabsIo\AmazonMwsThrottlingMiddleware\Throttle;
 
 class Throttled
@@ -18,10 +20,20 @@ class Throttled
     /** @var int */
     protected $hourlyRequestQuota;
 
+    /** @var EolabsIo\AmazonMwsThrottlingMiddleware\Contracts\Deferrer */
+    protected $deferrer;
+
 
     public function __construct()
     {
+        $this->deferrer = new SleepDeferrer();
+    }
 
+    public function deferrer(Deferrer $deferrer)
+    {
+        $this->deferrer = $deferrer;
+
+        return $this;
     }
 
     public function key(string $key)
@@ -62,14 +74,12 @@ class Throttled
         $this->getThrottle()
              ->then(function () use ($job, $next) {
                     $next($job);
-                }, function ($releaseDuration) use ($job) {
-                    $job->release($releaseDuration);
                 });
     }
 
     protected function getThrottle(): Throttle
     {
-        return (new Throttle())
+        return (new Throttle($this->deferrer))
                 ->key($this->key)
                 ->maximumQuota($this->maximumQuotaAllowed)
                 ->restoreRate($this->restoreRatePerSecond);

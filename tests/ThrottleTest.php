@@ -3,6 +3,7 @@
 namespace EolabsIo\AmazonMwsThrottlingMiddleware\Tests;
 
 use EolabsIo\AmazonMwsThrottlingMiddleware\Tests\TestCase;
+use EolabsIo\AmazonMwsThrottlingMiddleware\Tests\TestDeferrer;
 use EolabsIo\AmazonMwsThrottlingMiddleware\Throttle;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -22,6 +23,8 @@ class ThrottleTest extends TestCase
     /** @var Illuminate\Support\Carbon */
     private $knownDate;
 
+    /** @var EolabsIo\AmazonMwsThrottlingMiddleware\Tests\TestDeferrer */
+    private $testDeferrer;
 
     protected function setUp(): void
     {
@@ -31,10 +34,12 @@ class ThrottleTest extends TestCase
 
         $this->knownDate = Carbon::create(2020, 3, 24, 12);
         Carbon::setTestNow(function() { return $this->knownDate->copy(); });  
+
+        $this->deferrer = new TestDeferrer();
         
-        $this->throttle = (new Throttle())->key('throttle-key')
-                                          ->maximumQuota(10)
-                                          ->restoreRate(2);
+        $this->throttle = (new Throttle($this->deferrer))->key('throttle-key')
+                                                         ->maximumQuota(10)
+                                                         ->restoreRate(2);
 
     }
 
@@ -90,6 +95,7 @@ class ThrottleTest extends TestCase
         
         //wait for restore
         $this->knownDate->addSeconds(20);
+        $this->resetDeferrer();
 
         $this->callThrottle();
         $this->assertWasThrottled();
@@ -97,16 +103,18 @@ class ThrottleTest extends TestCase
         
         //wait for restore
         $this->knownDate->addSeconds(40);
+        $this->resetDeferrer();
 
         $this->callThrottle();
         $this->assertWasExecuted();
-        $this->assertThrottleDurationEquals(null);
-        $this->assertNumberOfRequests(1);
+        $this->assertThrottleDurationEquals(0);
+        $this->assertNumberOfRequests(0);
 
         //wait for restore
         // 2 request/min with max of 10 = 5 mins to restore
         // 5mins * 60sec = 300 sec
         $this->knownDate->addSeconds(300);
+        $this->resetDeferrer();
 
         $this->callThrottle();
         $this->assertWasExecuted();
@@ -166,6 +174,7 @@ class ThrottleTest extends TestCase
         
         //wait for restore
         $this->knownDate->addMilliseconds(200);
+        $this->resetDeferrer();
 
         $this->callThrottle();
         $this->assertWasThrottled();
@@ -173,6 +182,7 @@ class ThrottleTest extends TestCase
         
         //wait for restore
         $this->knownDate->addMilliseconds(4000);
+        $this->resetDeferrer();
 
         $this->callThrottle();
         $this->assertWasExecuted();
@@ -183,6 +193,7 @@ class ThrottleTest extends TestCase
         // 0.5 request/sec with max of 30 = 60 secs to restore
         // 60seconds * 1000(ms/sec) = 60000 sec
         $this->knownDate->addMilliseconds(60000);
+        $this->resetDeferrer();
 
         $this->callThrottle();
         $this->assertWasExecuted();
@@ -202,7 +213,7 @@ class ThrottleTest extends TestCase
 
     public function assertWasThrottled()
     {
-        $this->assertTrue($this->executedJob === false);
+        $this->assertTrue($this->throttleDuration > 0);
     }
 
     public function assertThrottleDurationEquals($duration)
@@ -224,18 +235,18 @@ class ThrottleTest extends TestCase
 
     public function callThrottle(): void
     {
-       $this->throttle->then([$this,'success'], [$this, 'failure']);
+       $this->throttle->then([$this,'success']);
     }
 
     public function success()
     {
         $this->executedJob = true;
-        $this->throttleDuration = null;
+        $this->throttleDuration = $this->deferrer->getCurrentTime() / 1000; //null;
     }
 
-    public function failure($throttleDuration = null) {
-        $this->executedJob = false;
-        $this->throttleDuration = $throttleDuration;
+    public function resetDeferrer()
+    {
+        $this->deferrer->sleep( - $this->deferrer->getCurrentTime());
     }
 
 }
