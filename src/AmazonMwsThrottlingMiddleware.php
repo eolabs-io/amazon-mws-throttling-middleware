@@ -45,6 +45,24 @@ class AmazonMwsThrottlingMiddleware
 					->restoreRate(0.5);
 	}
 
+	public function forListFinancialEventGroups()
+	{
+		// maximum request quota of 30 and a restore rate of one request every two seconds (or 1 every 1/2 second)
+		return (new Throttled())
+					->key('list-financial-event-groups-throttle')
+					->maximumQuota(30)
+					->restoreRate(0.5)
+					->hourlyRequestQuota(1800);
+	}
 
+	public function forListFinancialEvents()
+	{
+		// maximum request quota of 30 and a restore rate of one request every two seconds (or 1 every 1/2 second)
+		return (new Throttled())
+					->key('list-financial-events-throttle')
+					->maximumQuota(30)
+					->restoreRate(0.5)
+					->hourlyRequestQuota(1800);
+	}
 
 }
