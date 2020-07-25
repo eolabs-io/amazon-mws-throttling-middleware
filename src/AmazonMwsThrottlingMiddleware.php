@@ -65,11 +65,11 @@ class AmazonMwsThrottlingMiddleware
 					->hourlyRequestQuota(1800);
 	}
 
-	public function forGetMatchingProduct()
+	public function forGetMatchingProducts()
 	{
 		// maximum request quota of 20 and a restore rate of two request every second
 		return (new Throttled())
-					->key('get-matching-product-throttle')
+					->key('get-matching-products-throttle')
 					->maximumQuota(20)
 					->restoreRate(2)
 					->hourlyRequestQuota(7200);
