@@ -75,4 +75,12 @@ class AmazonMwsThrottlingMiddleware
 					->hourlyRequestQuota(7200);
 	}
 
+	public function forListMarketplaceParticipations()
+	{
+		// maximum request quota of 20 and a restore rate of two request every second
+		return (new Throttled())
+					->key('list-marketplace-participations')
+					->maximumQuota(15)
+					->restoreRateInMin(1);
+	}
 }
