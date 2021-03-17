@@ -160,4 +160,14 @@ class AmazonMwsThrottlingMiddleware
                     ->restoreRateInMin(1)
                     ->hourlyRequestQuota(60);
     }
+
+    public function forGetProductCategories()
+    {
+        // maximum request quota of 20 and a restore rate of one request every five seconds (or 1 every 1/5 second)
+        return (new Throttled())
+                    ->key('get-product-categories')
+                    ->maximumQuota(20)
+                    ->restoreRate(0.2)
+                    ->hourlyRequestQuota(720);
+    }
 }
